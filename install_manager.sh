@@ -162,7 +162,7 @@ else
     echo "Continue."
 fi 
 
-sudo docker compose --file ./docker-compose-manager.yml --env-file ./impulse.conf up --detach
+sudo docker-compose --file ./docker-compose-manager.yml --env-file ./impulse.conf up --detach
 
 sleep 10
 
