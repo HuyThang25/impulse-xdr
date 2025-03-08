@@ -8,10 +8,7 @@ AGENT_TAG_ID=$4
 PACKAGE_MGR=$5
 
 
-#AGENT_ID_TAG="ixcAgent12"
-
-## Install dependencies 
-
+## rsyslog dependencies 
 if [[ $PACKAGE_MGR = "deb" ]]; then
 	DEBIAN_FRONTEND=noninteractive apt install -y rsyslog rsyslog-gnutls
 fi
@@ -25,44 +22,49 @@ fi
 mv /etc/rsyslog.conf /etc/rsyslog.conf.bak
 
 
+
 #### Rsyslog Agent
 LIGHT_AGENT_CONFD_RSYSLOG_TEMPLATE='
 # OSquery  
-$InputFileName /var/log/osquery/osqueryd.results.log
-$InputFileTag osquery-agent
-$InputFileStateFile osquery-agent
-$InputFilePollInterval 10
-$InputRunFileMonitor
+input(type="imfile" File="/var/log/osquery/osqueryd.results.log" Tag="osquery-agent")
 '
 
 HEAVY_AGENT_CONFD_RSYSLOG_TEMPLATE='
 # OSquery  
-$InputFileName /var/log/osquery/osqueryd.results.log
-$InputFileTag osquery-agent
-$InputFileStateFile osquery-agent
-$InputFilePollInterval 10
-$InputRunFileMonitor
+input(type="imfile" File="/var/log/osquery/osqueryd.results.log" Tag="osquery-agent")
 
-# eve-alerts.json 
-$InputFileName /var/impulse/log/suricata/eve-alert.json
-$InputFileTag eve-alert-agent
-$InputFileStateFile eve-alert-agent
-$InputFilePollInterval 10
-$InputRunFileMonitor
+# eve-alerts 
+input(type="imfile" File="/var/impulse/log/suricata/eve-alert.json" Tag="eve-alert-agent")
 
-# eve-flow.json 
-$InputFileName /var/impulse/log/suricata/eve-flow.json
-$InputFileTag eve-flow-agent
-$InputFileStateFile eve-flow-agent
-$InputFilePollInterval 10
-$InputRunFileMonitor
+# eve-flow
+input(type="imfile" File="/var/impulse/log/suricata/eve-flow.json" Tag="eve-flow-agent")
 
-# eve-dns.json 
-$InputFileName /var/impulse/log/suricata/eve-dns.json
-$InputFileTag eve-dns-agent
-$InputFileStateFile eve-dns-agent
-$InputFilePollInterval 10
-$InputRunFileMonitor
+# eve-dns 
+input(type="imfile" File="/var/impulse/log/suricata/eve-dns.json" Tag="eve-dns-agent")
+
+# eve-ssh 
+input(type="imfile" File="/var/impulse/log/suricata/eve-ssh.json" Tag="eve-ssh-agent")
+
+# eve-http 
+input(type="imfile" File="/var/impulse/log/suricata/eve-http.json" Tag="eve-http-agent")
+
+# eve-tls 
+input(type="imfile" File="/var/impulse/log/suricata/eve-tls.json" Tag="eve-tls-agent")
+
+# eve-dhcp 
+input(type="imfile" File="/var/impulse/log/suricata/eve-dhcp.json" Tag="eve-dhcp-agent")
+
+# eve-ftp 
+input(type="imfile" File="/var/impulse/log/suricata/eve-ftp.json" Tag="eve-ftp-agent")
+
+# eve-files 
+input(type="imfile" File="/var/impulse/log/suricata/eve-files.json" Tag="eve-files-agent")
+
+# eve-smb 
+input(type="imfile" File="/var/impulse/log/suricata/eve-smb.json" Tag="eve-smb-agent")
+
+# eve-smtp 
+input(type="imfile" File="/var/impulse/log/suricata/eve-smtp.json" Tag="eve-smtp-agent")
 '
 
 AGENT_GENERAL_CONF_TEMPLATE='
@@ -72,19 +74,19 @@ AGENT_GENERAL_CONF_TEMPLATE='
 $LocalHostName '$AGENT_TAG_ID'
 $PreserveFQDN on
 
-$ModLoad imuxsock # provides support for local system logging
-$ModLoad imklog   # provides kernel logging support (previously done by rklogd)
-#$ModLoad immark  # provides --MARK-- message capability
-$ModLoad imfile 
+module(load="imuxsock") # provides support for local system logging
+module(load="imfile" PollingInterval="10")
+
+# # Where to place auxiliary files
+global(workDirectory="/var/lib/rsyslog")
+# # Use default timestamp format
+# module(load="builtin:omfile" Template="RSYSLOG_TraditionalFileFormat")
 
 $template logsFormat,"%msg%\n"
 $ActionFileDefaultTemplate logsFormat
-
 $MaxMessageSize 512k
-
 # Filter duplicated messages
 $RepeatedMsgReduction on
-
 # Set the default permissions for all log files.
 $FileOwner root
 $FileGroup root
@@ -94,8 +96,6 @@ $Umask 0022
 $PrivDropToUser root
 $PrivDropToGroup root
 
-$WorkDirectory /var/spool/rsyslog  #Where to place spool files
-
 ############################## TLS Setup ####################################
 $DefaultNetstreamDriverCAFile /etc/ssl/impulse/ca-cert.pem
 $DefaultNetstreamDriver gtls
@@ -103,7 +103,6 @@ $ActionSendStreamDriverMode 1
 $ActionSendStreamDriverAuthMode anon
 #############################################################################
 
-#$IncludeConfig /etc/rsyslog.d/impulse/*.conf # Include all config files in /etc/rsyslog.d/
 include(file="/etc/rsyslog.d/impulse/*.conf")
 
 ## Set up buffering 
@@ -111,9 +110,10 @@ $ActionQueueType LinkedList # use asynchronous processing
 $ActionQueueFileName dbq # set file name, also enables disk mode
 $ActionResumeRetryCount -1 # infinite retries on insert failure
 
-# # TCP send to Manager
+## TCP send to Manager
 *.* @@'$IP_MANAGER':7514  # Manager IP_ADDR is dynamically generated from the config file. 
 & ~
+
 '
 
 if [[ $AGENT_TYPE == 'heavy' ]]; 
@@ -135,69 +135,32 @@ systemctl restart rsyslog
 
 
 
+# ### This file is managed by Impulse. 
+# ## Remote Agent Unique ID
+# $LocalHostName '$AGENT_TAG_ID'
+# $PreserveFQDN on
+# #### GLOBAL DIRECTIVES ####
+# global(workDirectory="/var/lib/rsyslog") # Where to place auxiliary files
+# module(load="builtin:omfile" Template="RSYSLOG_TraditionalFileFormat") # Use default timestamp format
 
-
-
-
-
-
-# # rsyslog configuration file
-
-# # For more information see /usr/share/doc/rsyslog-*/rsyslog_conf.html
-# # If you experience problems, see http://www.rsyslog.com/doc/troubleshoot.html
+# # make gtls driver the default and set certificate files
+# global(
+# DefaultNetstreamDriver="gtls"
+# DefaultNetstreamDriverCAFile="/etc/ssl/impulse/ca-cert.pem"
+# )
 
 # #### MODULES ####
-
-# # The imjournal module bellow is now used as a message source instead of imuxsock.
-# $ModLoad imuxsock # provides support for local system logging (e.g. via logger command)
-# # Tachtler
-# # default: $ModLoad imjournal # provides access to the systemd journal
-# # $ModLoad imjournal # provides access to the systemd journal
-# #$ModLoad imklog # reads kernel messages (the same are read from journald)
-# # Tachtler
-# # default: #$ModLoad immark  # provides --MARK-- message capability
-# $ModLoad immark  # provides --MARK-- message capability
-
-# # Provides UDP syslog reception
-# #$ModLoad imudp
-# #$UDPServerRun 514
-
-# # Provides TCP syslog reception
-# #$ModLoad imtcp
-# #$InputTCPServerRun 514
-
-
-# #### GLOBAL DIRECTIVES ####
-
-# # Where to place auxiliary files
-# $WorkDirectory /var/lib/rsyslog
-
-# # Use default timestamp format
-# $ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
-
-# # File syncing capability is disabled by default. This feature is usually not required,
-# # not useful and an extreme performance hit
-# #$ActionFileEnableSync on
-
-# # Include all config files in /etc/rsyslog.d/
-# $IncludeConfig /etc/rsyslog.d/*.conf
-
-# # Turn off message reception via local log socket;
-# # local messages are retrieved through imjournal now.
-# # Tachtler
-# # default: $OmitLocalLogging on
-# $OmitLocalLogging off
-
-# # File to store the position in the journal
-# # Tachtler
-# # default: $IMJournalStateFile imjournal.state
-# # $IMJournalStateFile imjournal.state
-
-
-# #### RULES ####
- 
-# # Tachtler - new -
-# # Write all Log-Information to graylog
-# #$template GRAYLOGRFC5424,"<%PRI%>%PROTOCOL-VERSION% %TIMESTAMP:::date-rfc3339% %HOSTNAME% %APP-NAME% %PROCID% %MSGID% %STRUCTURED-DATA% %msg%\n"
-# #*.*                                                     @10.7.0.110:514;GRAYLOGRFC5424
-# *.*                                                     @10.7.0.110:514;RSYSLOG_SyslogProtocol23Format
+# module(load="imfile")
+# include(file="/etc/rsyslog.d/impulse/*.conf" mode="optional") # Include all config files in /etc/rsyslog.d/
+# #### FORWARDING SETUP ####
+# action(type="omfwd"  
+# # # An on-disk queue is created for this action. If the remote host is
+# # # down, messages are spooled to disk and sent when it is up again.
+# #queue.filename="fwdRule1"       # unique name prefix for spool files
+# #queue.maxdiskspace="1g"         # 1gb space limit (use as much as possible)
+# queue.saveonshutdown="on"       # save messages to disk on shutdown
+# queue.type="LinkedList"         # run asynchronously
+# action.resumeRetryCount="-1"    # infinite retries if host is down
+# StreamDriver="gtls"
+# StreamDriverMode="1" # run driver in TLS-only mode
+# Target="192.168.0.37" Port="7514" Protocol="tcp")

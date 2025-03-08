@@ -7,7 +7,6 @@ AGENT_TYPE=$3
 OS_TYPE=$4
 
 
-
 GRPC_CLIENT_SERVICE="
 [Unit]
 Description=Impulse Sensor GRPC Client Service 
@@ -49,51 +48,3 @@ else
 fi
 
 systemctl daemon-reload
-
-
-
-
-
-
-## DISCARDED
-
-# if [[ "$AGENT_TYPE" == *"$endpoint"* ]]; then
-
-# IMPULSE_MAIN_SERVICE="
-# [Unit]
-# Description=Impulse Agent Main Service 
-
-# [Service]
-# Type=simple
-# WorkingDirectory=/opt/impulse/agentd
-
-# ExecStart=/opt/impulse/tasks_manager/shell_scripts/agentd_endpoint_service.sh start
-# ExecStop=/opt/impulse/tasks_manager/shell_scripts/agentd_endpoint_service.sh stop
-
-# Restart=on-failure
-# RestartSec=10s
-
-# [Install]
-# WantedBy=multi-user.target
-# "
-# else 
-# IMPULSE_MAIN_SERVICE="
-# [Unit]
-# Description=Impulse Agent Main Service 
-
-# [Service]
-# Type=simple
-# WorkingDirectory=/opt/impulse/agentd
-
-# ExecStart=/opt/impulse/tasks_manager/shell_scripts/agentd_server_service.sh start
-# ExecStop=/opt/impulse/tasks_manager/shell_scripts/agentd_server_service.sh stop
-
-# Restart=on-failure
-# RestartSec=10s
-
-# [Install]
-# WantedBy=multi-user.target
-# "
-# fi
-
-# echo "$IMPULSE_MAIN_SERVICE" > /etc/systemd/system/impulse-main.service
