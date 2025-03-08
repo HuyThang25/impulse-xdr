@@ -175,14 +175,14 @@ if [[ $AGENT_TYPE == 'heavy' ]]; then
 	cp $PROJECT_ROOT_DIR/build/shared/docker/docker-compose-agent.yml $PROJECT_ROOT_DIR/docker-compose-agent.yml
 	cp $PROJECT_ROOT_DIR/build/shared/docker/docker-compose-nids.yml $PROJECT_ROOT_DIR/docker-compose-nids.yml
 
-	docker compose --file ./docker-compose-nids.yml --env-file ./impulse.conf up -d
+	docker-compose --file ./docker-compose-nids.yml --env-file ./impulse.conf up -d
 	sleep 5 
 	[ "$(docker ps -a | grep impulse-suricata)" ] && docker exec -it -d impulse-suricata suricata-update -f
 	
 	#[ "$(docker ps -a | grep impulse-suricata)" ] && docker exec -it -d --user suricata impulse-suricata suricata-update -f
 	#docker exec -it -d --user suricata impulse-suricata suricata-update -f
 
-	docker compose --file ./docker-compose-nids.yml --env-file ./impulse.conf down
+	docker-compose --file ./docker-compose-nids.yml --env-file ./impulse.conf down
 else 
 	cp $PROJECT_ROOT_DIR/build/shared/docker/docker-compose-agent.yml $PROJECT_ROOT_DIR/docker-compose-agent.yml
 fi
