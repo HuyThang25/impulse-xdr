@@ -12,5 +12,5 @@ else
 	python3.9 -m venv venv
 fi
 source venv/bin/activate
-pip3 install --no-cache-dir wheel
-pip3 install --no-cache-dir -r requirements.txt
+pip3 install --no-cache-dir wheel --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org
+pip3 install --no-cache-dir -r requirements.txt --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org
