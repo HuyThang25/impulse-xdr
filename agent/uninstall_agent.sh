@@ -10,8 +10,8 @@
 cd /opt/impulse
 ./impulse-control.sh stop
 
-docker compose --file ./docker-compose-agent.yml down
-docker compose --file ./docker-compose-nids.yml down
+docker-compose --file ./docker-compose-agent.yml down
+docker-compose --file ./docker-compose-nids.yml down
 
 apt purge -y osquery
 
